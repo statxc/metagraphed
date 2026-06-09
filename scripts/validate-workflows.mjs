@@ -133,6 +133,22 @@ for (const workflow of workflows) {
   }
   if (workflow === "publish-cloudflare.yml") {
     check(
+      !content.includes("npm run pipeline:refresh"),
+      workflow,
+      "publish workflow must not refresh live registry data during deployment",
+    );
+    check(
+      !content.includes('METAGRAPH_WRITE_PROBE_RESULTS: "1"'),
+      workflow,
+      "publish workflow must not write live probe results during deployment",
+    );
+    check(
+      content.includes("npm run artifacts:prepare-local") &&
+        content.includes("npm run r2:manifest"),
+      workflow,
+      "publish workflow must prepare R2 artifacts from reviewed repository inputs",
+    );
+    check(
       /\brefresh:\n[\s\S]*\bpublish:\n[\s\S]*needs:\s+refresh/.test(content),
       workflow,
       "publish workflow must isolate refresh tooling from Cloudflare publishing secrets",

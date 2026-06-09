@@ -45,13 +45,12 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Refresh publish artifacts
-        run: npm run pipeline:refresh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          METAGRAPH_WRITE_PROBE_RESULTS: "1"
+      - name: Prepare reviewed publish artifacts
+        run: |
+          npm run artifacts:prepare-local
+          npm run r2:manifest
 
-      - name: Stage refreshed publish artifacts
+      - name: Stage reviewed publish artifacts
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/publish-artifacts"
@@ -61,7 +60,7 @@ jobs:
             cp -R dist/metagraph-r2 "$RUNNER_TEMP/publish-artifacts/dist/metagraph-r2"
           fi
 
-      - name: Upload refreshed publish artifacts
+      - name: Upload reviewed publish artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: cloudflare-publish-artifacts
@@ -89,13 +88,13 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Download refreshed publish artifacts
+      - name: Download reviewed publish artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: cloudflare-publish-artifacts
           path: ${{ runner.temp }}/publish-artifacts
 
-      - name: Restore refreshed publish artifacts
+      - name: Restore reviewed publish artifacts
         run: |
           set -euo pipefail
           find "$RUNNER_TEMP/publish-artifacts" -type l -print -quit | grep -q . && {
