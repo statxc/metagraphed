@@ -10,7 +10,7 @@
     "subtensor-wss"
   ],
   "schema_version": 1,
-  "surface_count": 73,
+  "surface_count": 74,
   "surfaces": [
     {
       "auth_required": false,
@@ -587,6 +587,24 @@
       "surface_id": "sn-33-readyai-llms-data-repo",
       "surface_key": "srf-369814c5b1cde9c3",
       "url": "https://github.com/afterpartyai/llms_txt_store"
+    },
+    {
+      "auth_required": false,
+      "authority": "community",
+      "kind": "subnet-api",
+      "netuid": 33,
+      "probe": {
+        "expect": "json",
+        "method": "GET",
+        "timeout_ms": 10000
+      },
+      "provider": "readyai",
+      "public_safe": true,
+      "subnet_name": "ReadyAI",
+      "subnet_slug": "sn-33",
+      "surface_id": "sn-33-readyai-subnet-api",
+      "surface_key": "srf-64549ab07f522cc6",
+      "url": "https://api.readyai.ai/health"
     },
     {
       "auth_required": false,
