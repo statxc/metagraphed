@@ -268,6 +268,78 @@ describe("buildTurnover — regressions", () => {
     assert.equal(data.neuron_retention, 0);
   });
 
+  test("a sub-perfect retention mean must not round stability_score up to a perfect 100", () => {
+    // A fully-retained validator set (retention 1.0) plus ~1% neuron churn yields a
+    // mean of ~0.995, which a bare Math.round lifts to 100 — reporting flawless
+    // stability for a subnet that demonstrably rotated. Build 100 retained neurons
+    // (one of them a retained validator) and one brand-new neuron at the end:
+    // neuron_retention = 100/101 ≈ 0.9901, mean ≈ 0.99505 → must clamp to 99.
+    const rows = [];
+    for (let uid = 0; uid < 100; uid += 1) {
+      const validator_permit = uid === 0 ? 1 : 0;
+      rows.push({
+        snapshot_date: "2026-05-01",
+        uid,
+        hotkey: `H${uid}`,
+        validator_permit,
+      });
+      rows.push({
+        snapshot_date: "2026-06-01",
+        uid,
+        hotkey: `H${uid}`,
+        validator_permit,
+      });
+    }
+    // A new neuron appears only at the end → union 101, intersection 100.
+    rows.push({
+      snapshot_date: "2026-06-01",
+      uid: 100,
+      hotkey: "Hnew",
+      validator_permit: 0,
+    });
+    const data = buildTurnover(rows, 1, {
+      window: "30d",
+      startDate: "2026-05-01",
+      endDate: "2026-06-01",
+    });
+    assert.equal(data.validator_retention, 1); // the lone validator is retained
+    assert.equal(data.neuron_retention, 0.9901); // 100/101, churned
+    assert.equal(data.stability_score, 99); // clamped, never an overstated 100
+  });
+
+  test("neuron_retention rounds to < 1 when sub-perfect jaccard would otherwise round up to 1 (round() clamp path)", () => {
+    // 20000 neurons at start, 19999 at end (1 exits): jaccard = 19999/20000 = 0.99995,
+    // which Math.round(0.99995 * 10000) = 10000 / 10000 = 1 without the clamp.
+    // The round() guard must intercept it and return 0.9999 (not 1).
+    const rows = [];
+    for (let uid = 0; uid < 20000; uid++) {
+      rows.push({
+        snapshot_date: "2026-05-01",
+        uid,
+        hotkey: `M${uid}`,
+        validator_permit: 0,
+      });
+    }
+    for (let uid = 0; uid < 19999; uid++) {
+      rows.push({
+        snapshot_date: "2026-06-01",
+        uid,
+        hotkey: `M${uid}`,
+        validator_permit: 0,
+      });
+    }
+    const data = buildTurnover(rows, 1, {
+      window: "30d",
+      startDate: "2026-05-01",
+      endDate: "2026-06-01",
+    });
+    assert.ok(
+      data.neuron_retention < 1,
+      "sub-perfect retention must not round up to 1",
+    );
+    assert.equal(data.neuron_retention, 0.9999); // clamped; naïve Math.round gives 1
+  });
+
   test("a validator that loses its permit counts as exited; its neuron stays retained", () => {
     const rows = [
       {
