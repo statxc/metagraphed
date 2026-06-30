@@ -556,7 +556,10 @@ export async function handleAccountHistory(request, env, ss58, url) {
   const { from, to } = range;
   const { limit, offset, cursor } = parsePagination(url, FEED_PAGINATION);
   const netuid = url.searchParams.get("netuid");
-  if (netuid != null && !/^\d+$/.test(netuid)) {
+  if (
+    netuid != null &&
+    (!/^\d+$/.test(netuid) || !Number.isSafeInteger(Number(netuid)))
+  ) {
     return errorResponse(
       "invalid_param",
       "netuid must be a non-negative integer.",

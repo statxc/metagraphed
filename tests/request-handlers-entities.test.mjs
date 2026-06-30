@@ -1492,7 +1492,9 @@ describe("handleAccountHistory", () => {
   });
 
   test("rejects malformed netuid filters with 400", async () => {
-    for (const netuid of ["abc", "-1", "7.5", ""]) {
+    // 9007199254740993 = Number.MAX_SAFE_INTEGER + 2: passes /^\d+$/ but loses
+    // precision under Number(), so the safe-integer guard rejects it.
+    for (const netuid of ["abc", "-1", "7.5", "", "9007199254740993"]) {
       const res = await handleAccountHistory(
         req(`/api/v1/accounts/${SS58}/history`),
         emptyEnv(),
